@@ -1,3 +1,4 @@
+# model/Objects/Book.py (El mismo que proporcionaste)
 class Book:
     def __init__(self, book_id, title, author, genre, status="available"):
         """

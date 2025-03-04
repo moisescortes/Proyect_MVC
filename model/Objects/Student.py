@@ -1,4 +1,4 @@
-from Proyect_MVC.model.Objects import User
+from model.Objects import User
 
 class Student(User):
     def __init__(self, user_id, name, career):

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>737</width>
-    <height>397</height>
+    <width>1067</width>
+    <height>515</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,18 +16,18 @@
   <widget class="QTableWidget" name="table_books">
    <property name="geometry">
     <rect>
-     <x>260</x>
-     <y>30</y>
-     <width>391</width>
-     <height>201</height>
+     <x>210</x>
+     <y>20</y>
+     <width>841</width>
+     <height>441</height>
     </rect>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>260</x>
-     <y>270</y>
+     <x>650</x>
+     <y>470</y>
      <width>395</width>
      <height>30</height>
     </rect>
@@ -63,19 +63,22 @@
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>50</y>
-     <width>139</width>
-     <height>140</height>
+     <x>10</x>
+     <y>20</y>
+     <width>171</width>
+     <height>151</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QLineEdit" name="txt_book_id">
       <property name="text">
+       <string/>
+      </property>
+      <property name="placeholderText">
        <string>ID del libro</string>
       </property>
      </widget>
@@ -83,6 +86,9 @@
     <item>
      <widget class="QLineEdit" name="txt_title">
       <property name="text">
+       <string/>
+      </property>
+      <property name="placeholderText">
        <string>Título</string>
       </property>
      </widget>
@@ -90,6 +96,9 @@
     <item>
      <widget class="QLineEdit" name="txt_author">
       <property name="text">
+       <string/>
+      </property>
+      <property name="placeholderText">
        <string>Autor</string>
       </property>
      </widget>
@@ -97,6 +106,9 @@
     <item>
      <widget class="QLineEdit" name="txt_genre">
       <property name="text">
+       <string/>
+      </property>
+      <property name="placeholderText">
        <string>Género</string>
       </property>
      </widget>
