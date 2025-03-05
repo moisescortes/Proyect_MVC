@@ -1,14 +1,16 @@
-from view.mainwindow import MainWindowView
+from PyQt5 import QtWidgets
+from view.ui_mainwindow import Ui_MainWindow
 from controllers.BookController import BookController
 #from controllers.LaptopController import LaptopController
 from controllers.UserController import UserController
 #from controllers.LoanController import LoanController
 
-
-class MainWindowController:
+class MainWindowController(QtWidgets.QMainWindow):
     def __init__(self, database):
+        super().__init__()
         self.database = database  # Referencia a la base de datos
-        self.view = MainWindowView()
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
         self.connect_signals()
         # Inicializa los controladores como None
         self.book_controller = None
@@ -18,21 +20,20 @@ class MainWindowController:
 
     def connect_signals(self):
         """Conecta las señales de la vista a los slots del controlador."""
-        self.view.ui.btn_books.clicked.connect(self.show_book_manager)
-        #self.view.ui.btn_laptops.clicked.connect(self.show_laptop_manager)
-        self.view.ui.btn_users.clicked.connect(self.show_user_manager)
-        #self.view.ui.btn_loans.clicked.connect(self.show_loan_manager)
-        self.view.ui.btn_exit.clicked.connect(self.close_application)  # Salir
+        self.ui.btn_books.clicked.connect(self.show_book_manager)
+        # self.ui.btn_laptops.clicked.connect(self.show_laptop_manager)
+        self.ui.btn_users.clicked.connect(self.show_user_manager)
+        # self.ui.btn_loans.clicked.connect(self.show_loan_manager)
+        self.ui.btn_exit.clicked.connect(self.close_application)  # Salir
 
     def show_view(self):
         """Muestra la ventana principal."""
-        self.view.show()
+        self.show()
 
     def show_book_manager(self):
         """Muestra la ventana de gestión de libros."""
-        if self.book_controller is None:  # Crea el controlador solo si no existe
-            self.book_controller = BookController(self.database)  # Pasa la conexión
-        self.book_controller.show_view()
+        show_book_manager = BookController(self.database)
+        show_book_manager.exec_()
 
     def show_laptop_manager(self):
         """Muestra la ventana de gestión de laptops (implementar)."""
@@ -43,9 +44,8 @@ class MainWindowController:
         
     def show_user_manager(self):
         """Muestra la ventana de gestión de usuarios (implementar)."""
-        if self.user_controller is None:
-            self.user_controller = UserController(self.database)
-        self.user_controller.show_view()
+        show_book_manager = UserController(self.database)
+        show_book_manager.exec_()
 
     def show_loan_manager(self):
         """Muestra la ventana de gestión de préstamos (implementar)."""
@@ -56,4 +56,4 @@ class MainWindowController:
 
     def close_application(self):
         """Cierra la aplicación."""
-        self.view.close()
+        self.close()

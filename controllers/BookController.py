@@ -1,171 +1,226 @@
+from PyQt5.QtWidgets import QDialog, QTableWidgetItem, QMessageBox
+from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtCore import QRegExp, Qt
+
+from view.ui_bookmanager import Ui_BookDialog  # Asegúrate de que esta ruta sea correcta
 from model.DAO.BookDAO import BookDAO
 from model.Objects.Book import Book
-from view.bookmanager import BookManagerView  # Importa la vista
-from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem, QMessageBox
+from dbConnection.VerifyConnection import VerifyConnection
 
-class BookController:  # Ya no hereda de QMainWindow
+
+class BookController(QDialog):
     def __init__(self, database):
-        self._database = database  # Usar directamente la conexión
-        self._book_dao = BookDAO(self._database)  # Pasar la conexión al DAO
-        self.view = BookManagerView()
-        self.connect_signals()
+        super().__init__()
+        self.ui = Ui_BookDialog()
+        self.ui.setupUi(self)
+        self._book_dao = BookDAO(database)
+        self.initializeGUI()
+        self.load_books_to_table()  # Cargar libros al iniciar
 
-    def connect_signals(self):
-        """Conecta las señales de la vista a los slots del controlador."""
-        self.view.ui.btn_add.clicked.connect(self.add_book)
-        self.view.ui.btn_search.clicked.connect(self.search_book)
-        self.view.ui.btn_update.clicked.connect(self.update_book)
-        self.view.ui.btn_delete.clicked.connect(self.delete_book)
-        # Conectar la señal de selección de la tabla
-        self.view.ui.table_books.itemSelectionChanged.connect(self.load_selected_book)
+    def initializeGUI(self):
+        self.ui.btn_add.clicked.connect(self.addBook)
+        self.ui.btn_update.clicked.connect(self.updateBook)
+        self.ui.btn_delete.clicked.connect(self.deleteBook)
+        self.ui.btn_search.clicked.connect(self.searchBook)
 
-
-    def show_view(self):
-        """Muestra la vista."""
-        self.view.show()
-        self.load_all_books()  # Cargar todos los libros al iniciar
-
-
-    def load_all_books(self):
-        """Carga todos los libros desde la base de datos y actualiza la tabla."""
-        books = self._book_dao.get_all_books()
-        self.view.update_table(books)
-        
-    def load_selected_book(self):
-        """Carga los datos del libro seleccionado en los campos de texto."""
-        selected_items = self.view.ui.table_books.selectedItems()
-        if not selected_items:
-            return  # No hay nada seleccionado
-
-        # Obtenemos la fila del primer item seleccionado
-        row = selected_items[0].row()
-
-        # Obtenemos los datos de la fila.  Asumiendo que el ID está en la columna 0
-        book_id = self.view.ui.table_books.item(row, 0).text()
-        book = self._book_dao.get_book_by_id(book_id)
-
-        if book:
-            # Llenar los campos del formulario
-            self.view.ui.txt_book_id.setText(book.get_book_id())
-            self.view.ui.txt_title.setText(book.get_title())
-            self.view.ui.txt_author.setText(book.get_author())
-            self.view.ui.txt_genre.setText(book.get_genre())
-            # Seleccionar el estado correcto en el QComboBox
-            index = self.view.ui.cmb_status.findText(book.get_status())
-            if index >= 0:
-                self.view.ui.cmb_status.setCurrentIndex(index)
+        # Validadores (permite números y letras, según corresponda)
+        self.ui.txt_book_id.setValidator(QRegExpValidator(QRegExp("[0-9]+"), self))  # Solo números para ID
+        self.ui.txt_title.setValidator(QRegExpValidator(QRegExp("[a-zA-Z0-9\\s\\.,:-]+"), self)) # Permitir alfanumerico, espacios, y algunos simbolos.
+        self.ui.txt_author.setValidator(QRegExpValidator(QRegExp("[a-zA-Z\\s]+"), self)) # Solo letras y espacios
+        self.ui.txt_genre.setValidator(QRegExpValidator(QRegExp("[a-zA-Z\\s]+"), self)) # Solo letras y espacios
 
 
-    def add_book(self):
-        """Manejador del evento de clic en el botón 'Agregar'."""
-        book_data = self.view.get_form_data()
+        # Conectar el doble clic en la tabla para editar
+        self.ui.table_books.itemDoubleClicked.connect(self.load_book_to_edit)
+
+
+    def _get_form_data(self):
+        """Helper function to get form data."""
+        return {
+            "book_id": self.ui.txt_book_id.text(),
+            "title": self.ui.txt_title.text(),
+            "author": self.ui.txt_author.text(),
+            "genre": self.ui.txt_genre.text(),
+            "status": self.ui.cmb_status.currentText(),
+        }
+
+    def _validate_form_data(self, book_data):
+        """Validates the form data."""
+        if not book_data['book_id'] or not book_data['title'] or not book_data['author'] or not book_data['genre']: # CAMBIO AQUÍ: 'id' -> 'book_id'
+            QMessageBox.warning(self, "Error", "Todos los campos son obligatorios.")
+            return False
+        return True
+
+    def load_books_to_table(self):
+        """Loads all books from the database into the table."""
         try:
-            # Validación básica
-            if not all([book_data['book_id'], book_data['title'], book_data['author'], book_data['genre']]):
-                self.view.show_message("Error", "Por favor, complete todos los campos.", icon=QMessageBox.Warning)
-                return
-            
-            #Intenta convertir el book_id a entero
-            try:
-                book_id_int = book_data['book_id']
-            except ValueError:
-                self.view.show_message("Error", "El ID del libro debe ser un número.", icon=QMessageBox.Warning)
-                return
-            
-            #Verifica si el libro ya existe
-            if self._book_dao.get_book_by_id(book_data["book_id"]):
-                self.view.show_message("Error", "Ya existe un libro con ese ID", icon=QMessageBox.Warning)
-                return
-
-            new_book = Book(
-                book_data["book_id"],
-                book_data["title"],
-                book_data["author"],
-                book_data["genre"],
-                book_data["status"],
-            )
-            if self._book_dao.add_book(new_book):
-                self.view.show_message("Éxito", "Libro agregado correctamente.")
-                self.load_all_books()  # Recargar la tabla
-                self.view.clear_form() # Limpiar el formulario
+            if VerifyConnection.verify_connection(self):
+                books = self._book_dao.get_all_books()
+                self.ui.table_books.setRowCount(0)  # Limpiar la tabla
+                for book in books:
+                    row = self.ui.table_books.rowCount()
+                    self.ui.table_books.insertRow(row)
+                    self.ui.table_books.setItem(row, 0, QTableWidgetItem(book.get_book_id()))
+                    self.ui.table_books.setItem(row, 1, QTableWidgetItem(book.get_title()))
+                    self.ui.table_books.setItem(row, 2, QTableWidgetItem(book.get_author()))
+                    self.ui.table_books.setItem(row, 3, QTableWidgetItem(book.get_genre()))
+                    self.ui.table_books.setItem(row, 4, QTableWidgetItem(book.get_status()))
             else:
-                self.view.show_message("Error", "No se pudo agregar el libro.", icon=QMessageBox.Critical)
+                QMessageBox.critical(self, "Error", "No Internet connection.", QMessageBox.Ok)
 
         except Exception as e:
-            self.view.show_message("Error", f"Error al agregar el libro: {e}", icon=QMessageBox.Critical)
+            print(f"❌ Error al cargar libros: {e}")
+            QMessageBox.critical(self, "Error", "Error al cargar libros.", QMessageBox.Ok)
 
-    def search_book(self):
-        """Manejador del evento de clic en el botón 'Buscar'."""
-        book_data = self.view.get_form_data()  # Obtener los datos del formulario
-        query = book_data["book_id"] or book_data["title"] or book_data["author"] or book_data["genre"] # Busca por el criterio que se haya ingresado
+    def addBook(self):
+        """Adds a new book to the database."""
+        try:
+            book_data = self._get_form_data()
+            if not self._validate_form_data(book_data):
+                return  # Stop if validation fails
 
-        if not query:
-            self.view.show_message("Error", "Ingrese un criterio de búsqueda.", icon=QMessageBox.Warning)
-            return
+            if VerifyConnection.verify_connection(self):
+                # Verificar si el libro ya existe
+                if self._book_dao.book_exists(book_data["book_id"]):
+                    QMessageBox.warning(self, "Error", "Ya existe un libro con ese ID.", QMessageBox.Ok)
+                    return  # Detener la operación si el libro ya existe
 
-        if book_data["book_id"]:
-            # Priorizar búsqueda por ID si se proporciona
-            book = self._book_dao.get_book_by_id(book_data["book_id"])
-            if book:
-                self.view.update_table([book])  # Mostrar solo el libro encontrado
+                new_book = Book(**book_data)
+
+                if self._book_dao.add_book(new_book):
+                    QMessageBox.information(self, 'Confirmation', "Libro agregado exitosamente ✔", QMessageBox.Ok)
+                    self.clearFields()
+                    self.load_books_to_table() # Recargar la tabla
+                else:
+                    QMessageBox.critical(self, "Error", "Error al agregar el libro.", QMessageBox.Ok)
             else:
-                self.view.show_message("Info", "No se encontró ningún libro con ese ID.", icon=QMessageBox.Information)
-                self.load_all_books()
+                QMessageBox.critical(self, "Error", "No hay conexión a Internet.", QMessageBox.Ok)
 
-        
-        else:
-            #Si no hay id, busca por otros criterios
-            books = self._book_dao.search_books(query)
-            if books:
-                self.view.update_table(books)
-            else:
-                self.view.show_message("Info", "No se encontraron libros con ese criterio de búsqueda.", icon=QMessageBox.Information)
-                self.load_all_books()
-
-    def update_book(self):
-        """Manejador del evento de clic en el botón 'Actualizar'."""
-        book_data = self.view.get_form_data()
-        
-        if not book_data['book_id']:
-            self.view.show_message("Error", "Debe ingresar el ID del libro a actualizar.", icon=QMessageBox.Warning)
-            return
-
-        #Verifica que exista
-        existing_book = self._book_dao.get_book_by_id(book_data["book_id"])
-        if not existing_book:
-            self.view.show_message("Error", "No existe un libro con ese ID.", icon=QMessageBox.Warning)
-            return
-
-
-        updated_book = Book(
-            book_data["book_id"],
-            book_data["title"],
-            book_data["author"],
-            book_data["genre"],
-            book_data["status"],
-        )
-        if self._book_dao.update_book(updated_book):
-            self.view.show_message("Éxito", "Libro actualizado correctamente.")
-            self.load_all_books()  # Recargar la tabla
-            self.view.clear_form()
-        else:
-            self.view.show_message("Error", "No se pudo actualizar el libro.", icon=QMessageBox.Critical)
-
-    def delete_book(self):
-        """Manejador del evento de clic en el botón 'Eliminar'."""
-        book_id = self.view.ui.txt_book_id.text()
-        
-        if not book_id:
-            self.view.show_message("Error", "Debe ingresar el ID del libro a eliminar.", icon=QMessageBox.Warning)
-            return
-
-        if not self._book_dao.get_book_by_id(book_id):
-            self.view.show_message("Error", "No existe un libro con ese ID.", icon=QMessageBox.Warning)
-            return
+        except Exception as e:
+            print(f"❌ Error : {e}")
+            QMessageBox.critical(self, "Error", "Ocurrió un error inesperado.", QMessageBox.Ok)
     
-        if self._book_dao.delete_book(book_id):
-            self.view.show_message("Éxito", "Libro eliminado correctamente.")
-            self.load_all_books()  # Recargar la tabla
-            self.view.clear_form()
+    def load_book_to_edit(self, item):
+        """Loads the selected book data into the form for editing."""
+        row = item.row()
+        book_id = self.ui.table_books.item(row, 0).text()  # Obtener el ID del libro
+
+        if VerifyConnection.verify_connection(self):
+            book = self._book_dao.get_book_by_id(book_id)
+            if book:
+                self.ui.txt_book_id.setText(book.get_book_id())
+                self.ui.txt_book_id.setEnabled(False) # Deshabilitar edición del ID
+                self.ui.txt_title.setText(book.get_title())
+                self.ui.txt_author.setText(book.get_author())
+                self.ui.txt_genre.setText(book.get_genre())
+                self.ui.cmb_status.setCurrentText(book.get_status())  # Usar setCurrentText
         else:
-            self.view.show_message("Error", "No se pudo eliminar el libro.", icon=QMessageBox.Critical)
+            QMessageBox.critical(self, "Error", "No hay conexión a Internet.", QMessageBox.Ok)
+            
+    def updateBook(self):
+        """Updates an existing book in the database."""
+        try:
+            book_data = self._get_form_data()  # Obtener datos del formulario
+            if not self._validate_form_data(book_data):
+                return
+
+            if VerifyConnection.verify_connection(self):
+                 # Crear un objeto Book con los datos actualizados
+                 updated_book = Book(**book_data)  # Esto ahora funcionará correctamente
+                 if self._book_dao.update_book(updated_book):
+                    QMessageBox.information(self, 'Confirmation', "Libro actualizado exitosamente ✔", QMessageBox.Ok)
+                    self.clearFields()
+                    self.load_books_to_table()
+                    self.ui.txt_book_id.setEnabled(True)  # Habilitar de nuevo el campo ID
+                 else:
+                    QMessageBox.critical(self, "Error", "Error al actualizar el libro.", QMessageBox.Ok)
+            else:
+                QMessageBox.critical(self, "Error", "No hay conexión a Internet.", QMessageBox.Ok)
+
+        except Exception as e:
+            print(f"❌ Error al actualizar: {e}")
+            QMessageBox.critical(self, "Error", "Ocurrió un error inesperado al actualizar.", QMessageBox.Ok)
+
+    def deleteBook(self):
+        """Deletes a book from the database."""
+        selected_row = self.ui.table_books.currentRow()
+        if selected_row == -1:
+            QMessageBox.warning(self, "Error", "Selecciona un libro para eliminar.")
+            return
+
+        book_id = self.ui.table_books.item(selected_row, 0).text()
+
+        # Confirmación
+        confirm = QMessageBox.question(self, "Confirmar", f"¿Estás seguro de eliminar el libro con ID '{book_id}'?",
+                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if confirm == QMessageBox.Yes:
+            try:
+                if VerifyConnection.verify_connection(self):
+                    if self._book_dao.delete_book(book_id):
+                         QMessageBox.information(self, "Confirmación", "Libro eliminado exitosamente.", QMessageBox.Ok)
+                         self.load_books_to_table()
+                    else:
+                         QMessageBox.critical(self, "Error", "Error al eliminar el libro.", QMessageBox.Ok)
+                else:
+                     QMessageBox.critical(self, "Error", "No hay conexión a Internet.", QMessageBox.Ok)
+
+            except Exception as e:
+                print(f"❌ Error al eliminar: {e}")
+                QMessageBox.critical(self, "Error", "Ocurrió un error inesperado al eliminar.", QMessageBox.Ok)
+
+    def searchBook(self):
+        """Searches for books based on criteria entered in the form fields."""
+        try:
+            if not VerifyConnection.verify_connection(self):
+                QMessageBox.critical(self, "Error", "No Internet connection.", QMessageBox.Ok)
+                return
+
+            # 1. Recolectar los criterios de búsqueda (que NO estén vacíos)
+            search_criteria = {}
+            if self.ui.txt_book_id.text().strip():
+                search_criteria["book_id"] = self.ui.txt_book_id.text().strip()
+            if self.ui.txt_title.text().strip():
+                search_criteria["title"] = self.ui.txt_title.text().strip()
+            if self.ui.txt_author.text().strip():
+                search_criteria["author"] = self.ui.txt_author.text().strip()
+            if self.ui.txt_genre.text().strip():
+                search_criteria["genre"] = self.ui.txt_genre.text().strip()
+
+            # 2. Si no hay criterios, mostrar todos los libros
+            if not search_criteria:
+                self.load_books_to_table()
+                return
+
+            # 3. Llamar al DAO con los criterios
+            results = self._book_dao.search_books(search_criteria)
+
+            # 4. Mostrar resultados
+            self.ui.table_books.setRowCount(0)
+            for book in results:
+                row = self.ui.table_books.rowCount()
+                self.ui.table_books.insertRow(row)
+                self.ui.table_books.setItem(row, 0, QTableWidgetItem(book.get_book_id()))
+                self.ui.table_books.setItem(row, 1, QTableWidgetItem(book.get_title()))
+                self.ui.table_books.setItem(row, 2, QTableWidgetItem(book.get_author()))
+                self.ui.table_books.setItem(row, 3, QTableWidgetItem(book.get_genre()))
+                self.ui.table_books.setItem(row, 4, QTableWidgetItem(book.get_status()))
+
+
+        except Exception as e:
+            print(f"Error en la búsqueda: {e}")
+            QMessageBox.critical(self, "Error", "Ocurrió un error en la búsqueda.", QMessageBox.Ok)
+    
+    
+    def clearFields(self):
+        """Clears all input fields in the form."""
+        self.ui.txt_book_id.clear()
+        self.ui.txt_title.clear()
+        self.ui.txt_author.clear()
+        self.ui.txt_genre.clear()
+        self.ui.cmb_status.setCurrentIndex(0)  # Restablecer el ComboBox
+        self.ui.txt_book_id.setEnabled(True) # Asegurar que el campo ID esté habilitado
+
+    def showEvent(self, event):
+        """Sobreescribimos showEvent para cargar los libros al mostrar el diálogo."""
+        super().showEvent(event)  # Llama al método de la clase base
+        self.load_books_to_table()

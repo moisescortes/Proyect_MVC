@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>UserManager</class>
- <widget class="QWidget" name="UserManager">
+ <class>UserManagerDialog</class>
+ <widget class="QDialog" name="UserManagerDialog">  <!-- Cambiado a QDialog -->
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>1063</width>
-    <height>494</height>
+    <height>550</height> <!-- Ajustado para acomodar los botones -->
    </rect>
   </property>
   <property name="windowTitle">
@@ -285,8 +285,50 @@
      </item>
     </layout>
    </item>
+   <item>
+        <!-- Agregamos los botones de Aceptar y Cancelar -->
+      <widget class="QDialogButtonBox" name="buttonBox">
+        <property name="standardButtons">
+            <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        </property>
+      </widget>
+    </item>
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+    <!-- Conexiones estándar para los botones -->
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>UserManagerDialog</receiver> <!--  receiver -->
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>531</x>
+     <y>520</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>531</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>UserManagerDialog</receiver> <!--  receiver -->
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>531</x>
+     <y>520</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>531</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

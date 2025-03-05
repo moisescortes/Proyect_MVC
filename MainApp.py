@@ -1,22 +1,21 @@
 import sys
-from PyQt5.QtWidgets import QApplication
-from controllers.MainWindowController import MainWindowController  # Controlador de MainWindow
+from PyQt5 import QtWidgets
 from dbConnection.FirebaseConnection import FirebaseConnection
+from controllers.MainWindowController import MainWindowController
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
 
-    # --- Conexión a Firebase ---
-    try:
-        firebase_connection = FirebaseConnection()
-        database = firebase_connection.db
-        print("Conexión a Firebase exitosa.")
-    except Exception as e:
-        print(f"Error al conectar a Firebase: {e}")
+    # Conectar a Firebase
+    firebase_connection = FirebaseConnection()
+    database = firebase_connection.db
+
+    if database is None:
+        print("❌ No se pudo conectar a Firebase. Saliendo...")
         sys.exit(1)
 
-    # Instancia el controlador de la ventana principal y pasa la conexión
-    main_window_controller = MainWindowController(database)
-    main_window_controller.show_view() # Mostrar MainWindow
+    # Crear la ventana principal
+    main_window = MainWindowController(database)
+    main_window.show_view()
 
     sys.exit(app.exec_())

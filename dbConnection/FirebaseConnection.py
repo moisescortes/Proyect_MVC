@@ -2,7 +2,6 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-
 class FirebaseConnection:
     def __init__(self):
         try:
@@ -10,7 +9,7 @@ class FirebaseConnection:
             base_dir = os.path.dirname(os.path.abspath(__file__))
 
             # Create the path to the JSON file, assuming it is in the same folder as the script
-            json_path = os.path.join(base_dir, "patronmvc-642cb-firebase-adminsdk-fbsvc-8cb36f8037.json")
+            json_path = os.path.join(base_dir, "patronmvc-642cb-firebase-adminsdk-fbsvc-b123b69c7f.json")
 
             # Verify that the JSON file exists
             if not os.path.exists(json_path):
@@ -35,3 +34,14 @@ class FirebaseConnection:
 
 # Using the class
 firebase_connection = FirebaseConnection()
+
+if __name__ == "__main__":
+    # Example usage of the FirebaseConnection class
+    db = firestore.client()
+    try:
+        docs = db.collection("books").limit(1).stream()
+        print("Conexión exitosa:", [doc.to_dict() for doc in docs])
+    except Exception as e:
+        print("Error de conexión:", e)
+
+
