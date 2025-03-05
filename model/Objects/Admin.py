@@ -1,15 +1,17 @@
-from model.Objects import User
+from model.Objects.User import User
 
 class Admin(User):
-    def __init__(self, user_id, name):
-        """
-        Constructor para la clase Admin.
+    def __init__(self, user_id, name, email, admin_level):
+        super().__init__(user_id, name, email, "Administrador")
+        self._admin_level = admin_level
 
-        :param user_id: Identificador único del administrador.
-        :param name: Nombre del administrador.
-        """
-        super().__init__(user_id, name, "admin")  # Llama al constructor de la clase base
+    def get_admin_level(self):
+        return self._admin_level
 
-    # Método especial para representación en string
-    def __str__(self):
-        return f"Admin(ID: {self._user_id}, Name: {self._name})"
+    def set_admin_level(self, admin_level):
+        self._admin_level = admin_level
+
+    def to_dict(self):
+        user_dict = super().to_dict()
+        user_dict["admin_level"] = self._admin_level
+        return user_dict

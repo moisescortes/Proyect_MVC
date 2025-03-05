@@ -19,9 +19,9 @@ class MainWindowController:
     def connect_signals(self):
         """Conecta las señales de la vista a los slots del controlador."""
         self.view.ui.btn_books.clicked.connect(self.show_book_manager)
-        self.view.ui.btn_laptops.clicked.connect(self.show_laptop_manager)
+        #self.view.ui.btn_laptops.clicked.connect(self.show_laptop_manager)
         self.view.ui.btn_users.clicked.connect(self.show_user_manager)
-        self.view.ui.btn_loans.clicked.connect(self.show_loan_manager)
+        #self.view.ui.btn_loans.clicked.connect(self.show_loan_manager)
         self.view.ui.btn_exit.clicked.connect(self.close_application)  # Salir
 
     def show_view(self):

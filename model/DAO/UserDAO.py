@@ -2,200 +2,89 @@ from model.Objects.User import User
 from model.Objects.Student import Student
 from model.Objects.Professor import Professor
 from model.Objects.Admin import Admin
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 class UserDAO:
     def __init__(self, database):
-        """
-        Constructor para la clase UserDAO.
-
-        :param database: Objeto de conexión a la base de datos (o Firebase).
-        """
         self._database = database
-        self._collection = "users"  # Nombre de la colección/tabla de usuarios en la base de datos
+        self._collection = "users"  # Nombre de la colección en Firestore
 
     def add_user(self, user):
-        """
-        Agrega un nuevo usuario a la base de datos.
-
-        :param user: Objeto de tipo User, Student, Professor o Admin.
-        :return: True si se agregó correctamente, False en caso contrario.
-        """
+        """Agrega un nuevo usuario a Firestore."""
         try:
-            # Convertir el objeto User a un diccionario
             user_data = user.to_dict()
-            # Agregar el usuario a la colección "users"
-            self._database.child(self._collection).push(user_data)
+            self._database.collection(self._collection).document(user.get_user_id()).set(user_data)
             return True
         except Exception as e:
-            print(f"Error al agregar el usuario: {e}")
+            print(f"Error al agregar usuario: {e}")
             return False
 
     def get_user_by_id(self, user_id):
-        """
-        Obtiene un usuario por su ID.
-
-        :param user_id: Identificador único del usuario.
-        :return: Objeto de tipo User, Student, Professor o Admin si se encuentra, None en caso contrario.
-        """
+        """Obtiene un usuario por su ID."""
         try:
-            # Buscar el usuario por su ID en la colección "users"
-            users = self._database.child(self._collection).get()
-            if users:
-                for key, value in users.items():
-                    if value["user_id"] == user_id:
-                        # Crear el objeto correspondiente según el tipo de usuario
-                        if value["user_type"] == "student":
-                            return Student(
-                                user_id=value["user_id"],
-                                name=value["name"],
-                                career=value["career"]
-                            )
-                        elif value["user_type"] == "professor":
-                            return Professor(
-                                user_id=value["user_id"],
-                                name=value["name"],
-                                department=value["department"]
-                            )
-                        elif value["user_type"] == "admin":
-                            return Admin(
-                                user_id=value["user_id"],
-                                name=value["name"]
-                            )
-                        else:
-                            return User(
-                                user_id=value["user_id"],
-                                name=value["name"],
-                                user_type=value["user_type"]
-                            )
-            return None
+            doc_ref = self._database.collection(self._collection).document(user_id)
+            doc = doc_ref.get()
+            if doc.exists:
+                return self._create_user_from_doc(doc)
+            else:
+                return None
         except Exception as e:
-            print(f"Error al obtener el usuario: {e}")
+            print(f"Error al obtener usuario: {e}")
             return None
 
     def update_user(self, user):
-        """
-        Actualiza un usuario en la base de datos.
-
-        :param user: Objeto de tipo User, Student, Professor o Admin con los datos actualizados.
-        :return: True si se actualizó correctamente, False en caso contrario.
-        """
+        """Actualiza un usuario existente."""
         try:
-            # Convertir el objeto User a un diccionario
             user_data = user.to_dict()
-            # Buscar el usuario por su ID en la colección "users"
-            users = self._database.child(self._collection).get()
-            if users:
-                for key, value in users.items():
-                    if value["user_id"] == user.get_user_id():
-                        # Actualizar el usuario en la base de datos
-                        self._database.child(self._collection).child(key).update(user_data)
-                        return True
-            return False
+            self._database.collection(self._collection).document(user.get_user_id()).update(user_data)
+            return True
         except Exception as e:
-            print(f"Error al actualizar el usuario: {e}")
+            print(f"Error al actualizar usuario: {e}")
             return False
 
     def delete_user(self, user_id):
-        """
-        Elimina un usuario de la base de datos.
-
-        :param user_id: Identificador único del usuario.
-        :return: True si se eliminó correctamente, False en caso contrario.
-        """
+        """Elimina un usuario."""
         try:
-            # Buscar el usuario por su ID en la colección "users"
-            users = self._database.child(self._collection).get()
-            if users:
-                for key, value in users.items():
-                    if value["user_id"] == user_id:
-                        # Eliminar el usuario de la base de datos
-                        self._database.child(self._collection).child(key).remove()
-                        return True
-            return False
+            self._database.collection(self._collection).document(user_id).delete()
+            return True
         except Exception as e:
-            print(f"Error al eliminar el usuario: {e}")
+            print(f"Error al eliminar usuario: {e}")
             return False
 
     def get_all_users(self):
-        """
-        Obtiene todos los usuarios de la base de datos.
-
-        :return: Lista de objetos de tipo User, Student, Professor o Admin.
-        """
+        """Obtiene todos los usuarios."""
         try:
-            users_list = []
-            # Obtener todos los usuarios de la colección "users"
-            users = self._database.child(self._collection).get()
-            if users:
-                for key, value in users.items():
-                    if value["user_type"] == "student":
-                        user = Student(
-                            user_id=value["user_id"],
-                            name=value["name"],
-                            career=value["career"]
-                        )
-                    elif value["user_type"] == "professor":
-                        user = Professor(
-                            user_id=value["user_id"],
-                            name=value["name"],
-                            department=value["department"]
-                        )
-                    elif value["user_type"] == "admin":
-                        user = Admin(
-                            user_id=value["user_id"],
-                            name=value["name"]
-                        )
-                    else:
-                        user = User(
-                            user_id=value["user_id"],
-                            name=value["name"],
-                            user_type=value["user_type"]
-                        )
-                    users_list.append(user)
-            return users_list
+            users = []
+            docs = self._database.collection(self._collection).stream()
+            for doc in docs:
+                users.append(self._create_user_from_doc(doc))
+            return users
         except Exception as e:
             print(f"Error al obtener todos los usuarios: {e}")
             return []
-
-    def get_users_by_type(self, user_type):
-        """
-        Obtiene todos los usuarios de un tipo específico.
-
-        :param user_type: Tipo de usuario ("student", "professor", "admin").
-        :return: Lista de objetos de tipo User, Student, Professor o Admin.
-        """
+    
+    def get_users_by_role(self, role):
+        """Obtiene todos los usuarios filtrados por rol."""
         try:
-            users_list = []
-            # Obtener todos los usuarios de la colección "users"
-            users = self._database.child(self._collection).get()
-            if users:
-                for key, value in users.items():
-                    if value["user_type"] == user_type:
-                        if user_type == "student":
-                            user = Student(
-                                user_id=value["user_id"],
-                                name=value["name"],
-                                career=value["career"]
-                            )
-                        elif user_type == "professor":
-                            user = Professor(
-                                user_id=value["user_id"],
-                                name=value["name"],
-                                department=value["department"]
-                            )
-                        elif user_type == "admin":
-                            user = Admin(
-                                user_id=value["user_id"],
-                                name=value["name"]
-                            )
-                        else:
-                            user = User(
-                                user_id=value["user_id"],
-                                name=value["name"],
-                                user_type=value["user_type"]
-                            )
-                        users_list.append(user)
-            return users_list
+            users = []
+            query = self._database.collection(self._collection).where(filter=FieldFilter("role", "==", role)).stream()
+            for doc in query:
+                users.append(self._create_user_from_doc(doc))
+            return users
         except Exception as e:
-            print(f"Error al obtener los usuarios por tipo: {e}")
+            print(f"Error al obtener usuarios por rol: {e}")
             return []
+
+    def _create_user_from_doc(self, doc):
+        """Crea un objeto User (o subclase) a partir de un documento de Firestore."""
+        data = doc.to_dict()
+        role = data.get("role")
+
+        if role == "Estudiante":
+            return Student(data["user_id"], data["name"], data["email"], data["major"])
+        elif role == "Profesor":
+            return Professor(data["user_id"], data["name"], data["email"], data["department"])
+        elif role == "Administrador":
+            return Admin(data["user_id"], data["name"], data["email"], data["admin_level"])
+        else:
+            return None
