@@ -141,7 +141,7 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     BookManagerDialog = QtWidgets.QDialog()
-    ui = Ui_BookManagerDialog()
+    ui = Ui_BookDialog()
     ui.setupUi(BookManagerDialog)
     BookManagerDialog.show()
     sys.exit(app.exec_())

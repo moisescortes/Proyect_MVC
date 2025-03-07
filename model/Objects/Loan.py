@@ -1,23 +1,26 @@
 from datetime import datetime
 
 class Loan:
-    def __init__(self, loan_id, user_id, book_id, start_date, end_date, status="active"):
+    def __init__(self, loan_id, user_id, item_id, start_date, end_date, status, item_type):
         """
-        Constructor para la clase Loan.
+        Constructor for the Loan class.
 
-        :param loan_id: Identificador único del préstamo.
-        :param user_id: Identificador del usuario que realiza el préstamo.
-        :param book_id: Identificador del libro prestado.
-        :param start_date: Fecha de inicio del préstamo (en formato 'YYYY-MM-DD').
-        :param end_date: Fecha de vencimiento del préstamo (en formato 'YYYY-MM-DD').
-        :param status: Estado del préstamo ("active" o "expired"), por defecto es "active".
+        Args:
+            loan_id (str): Unique identifier for the loan.
+            user_id (str): Identifier of the user making the loan.
+            item_id (str): Identifier of the item being loaned (book or laptop).
+            start_date (str): Loan start date in 'YYYY-MM-DD' format.
+            end_date (str): Loan end date in 'YYYY-MM-DD' format.
+            status (str): Status of the loan ('Activo', 'Vencido', 'Devuelto').
+            item_type (str): Type of item ('book' or 'laptop').
         """
         self._loan_id = loan_id
         self._user_id = user_id
-        self._book_id = book_id
-        self._start_date = datetime.strptime(start_date, "%Y-%m-%d")
-        self._end_date = datetime.strptime(end_date, "%Y-%m-%d")
+        self._item_id = item_id
+        self._start_date = start_date  # Store as string
+        self._end_date = end_date      # Store as string
         self._status = status
+        self._item_type = item_type
 
     # Getters
     def get_loan_id(self):
@@ -26,8 +29,8 @@ class Loan:
     def get_user_id(self):
         return self._user_id
 
-    def get_book_id(self):
-        return self._book_id
+    def get_item_id(self):
+        return self._item_id
 
     def get_start_date(self):
         return self._start_date
@@ -38,51 +41,42 @@ class Loan:
     def get_status(self):
         return self._status
 
+    def get_item_type(self):
+        return self._item_type
+
     # Setters
-    def set_loan_id(self, loan_id):
-        self._loan_id = loan_id
-
-    def set_user_id(self, user_id):
-        self._user_id = user_id
-
-    def set_book_id(self, book_id):
-        self._book_id = book_id
-
-    def set_start_date(self, start_date):
-        self._start_date = datetime.strptime(start_date, "%Y-%m-%d")
-
-    def set_end_date(self, end_date):
-        self._end_date = datetime.strptime(end_date, "%Y-%m-%d")
-
     def set_status(self, status):
-        if status in ["active", "expired"]:
+        if status in ["Activo", "Vencido", "Devuelto"]:
             self._status = status
         else:
-            raise ValueError("Invalid status. Use 'active' or 'expired'.")
+            raise ValueError("Invalid status. Use 'Activo', 'Vencido', or 'Devuelto'.")
 
-    # Método para verificar si el préstamo está vencido
+    def set_end_date(self, end_date):
+        self._end_date = end_date  # No strptime here
+
+    # No need for is_expired with string dates
     def is_expired(self):
         """
-        Verifica si el préstamo está vencido comparando la fecha actual con la fecha de vencimiento.
+        Verifies if loan is expired
         """
-        return datetime.now() > self._end_date
-
-    # Método para representar el objeto en formato JSON para Firebase
+        end_date_obj = datetime.strptime(self._end_date, "%Y-%m-%d")
+        return datetime.now() > end_date_obj
+    # Firebase-compatible to_dict method
     def to_dict(self):
         """
-        Convierte el objeto Loan a un diccionario JSON para almacenar en Firebase.
+        Converts the Loan object to a dictionary for Firebase storage.
         """
         return {
             "loan_id": self._loan_id,
             "user_id": self._user_id,
-            "book_id": self._book_id,
-            "start_date": self._start_date.strftime("%Y-%m-%d"),
-            "end_date": self._end_date.strftime("%Y-%m-%d"),
-            "status": self._status
+            "item_id": self._item_id,
+            "start_date": self._start_date,  # Store as string
+            "end_date": self._end_date,      # Store as string
+            "status": self._status,
+            "item_type": self._item_type,
         }
 
-    # Método especial para representación en string
     def __str__(self):
-        return (f"Loan(ID: {self._loan_id}, User ID: {self._user_id}, Book ID: {self._book_id}, "
-                f"Start Date: {self._start_date.strftime('%Y-%m-%d')}, End Date: {self._end_date.strftime('%Y-%m-%d')}, "
-                f"Status: {self._status})")
+        return (f"Loan(ID: {self._loan_id}, User ID: {self._user_id}, Item ID: {self._item_id}, "
+                f"Start Date: {self._start_date}, End Date: {self._end_date}, "
+                f"Status: {self._status}, Item Type: {self._item_type})")

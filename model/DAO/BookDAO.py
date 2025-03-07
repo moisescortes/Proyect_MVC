@@ -128,3 +128,14 @@ class BookDAO:
         except Exception as e:
             print(f"Error al buscar libros: {e}")
             return []
+    def update_book_status(self, book_id, new_status):
+        """
+        Actualiza el estado de un libro.
+        """
+        try:
+            doc_ref = self._database.collection(self._collection).document(book_id)
+            doc_ref.update({"status": new_status})
+            return True
+        except Exception as e:
+            print(f"Error al actualizar el estado del libro: {e}")
+            return False

@@ -22,6 +22,8 @@ coverage/
 # Ignore temporary files
 *.tmp
 *.swp
+*._pycache_
 
 # Ignore dbConnection folder
 dbConnection/
+

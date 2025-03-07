@@ -11,7 +11,6 @@ from model.Objects.Professor import Professor
 from model.Objects.Admin import Admin
 from dbConnection.VerifyConnection import VerifyConnection  # Asumo que tienes esto
 
-
 class UserController(QDialog):  # Hereda de QDialog
     def __init__(self, database):
         super().__init__()
@@ -320,10 +319,6 @@ class UserController(QDialog):  # Hereda de QDialog
             self.ui.professor_fields.setVisible(True)
             self.ui.admin_fields.setVisible(False)
         elif role == "Administrador":
-            self.ui.student_fields.setVisible(False)
-            self.ui.professor_fields.setVisible(False)
-            self.ui.admin_fields.setVisible(True)
-        else:
             self.ui.student_fields.setVisible(False)
             self.ui.professor_fields.setVisible(False)
             self.ui.admin_fields.setVisible(False)
